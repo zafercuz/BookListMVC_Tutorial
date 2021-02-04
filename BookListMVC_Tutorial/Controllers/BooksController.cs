@@ -12,6 +12,9 @@ namespace BookListMVC_Tutorial.Controllers
     {
         private readonly ApplicationDbContext _db;
 
+        [BindProperty]
+        public Book Book { get; set; }
+
         public BooksController(ApplicationDbContext db)
         {
             _db = db;
@@ -20,6 +23,45 @@ namespace BookListMVC_Tutorial.Controllers
         public IActionResult Index()
         {
             return View();
+        }
+
+        public IActionResult Upsert(int? id)
+        {
+            Book = new Book();
+            if (id == null) // FOR CREATE
+            {
+                return View(Book);
+            }
+
+            // ELSE FOR UPDATE
+            // Get the book where the book is equals to the id passed in the parameter
+            Book = _db.Books.FirstOrDefault(u => u.id == id); 
+            if (Book == null)
+            {
+                return NotFound();
+            }
+            return View(Book);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult Upsert()
+        {
+            if(ModelState.IsValid)
+            {
+                if (Book.id == 0)
+                {
+                    // Create
+                    _db.Books.Add(Book);
+                }
+                else
+                {
+                    _db.Books.Update(Book);
+                }
+                _db.SaveChanges();
+                return RedirectToAction("Index");
+            }
+            return View(Book);
         }
 
         #region API Calls
